@@ -1,0 +1,306 @@
+<main class="content">
+  <div class="workbench-header">
+    <h1>Marduk's Robotics Engineering Workbench</h1>
+    <p class="workbench-subtitle">Neural-Symbolic Middleware • GGUF Integration • Distributed Cognition</p>
+  </div>
+
+  <!-- Agent Management Panel -->
+  <section class="workbench-section">
+    <h2>Cognitive Agents & Device Tensors</h2>
+    <div class="agents-grid">
+      <% @agents.each do |agent_id, agent| %>
+        <div class="agent-card" data-agent-id="<%= agent_id %>">
+          <div class="agent-header">
+            <h3><%= agent.name %></h3>
+            <span class="agent-id">ID: <%= agent_id %></span>
+          </div>
+          
+          <div class="cognitive-state">
+            <h4>Cognitive State</h4>
+            <div class="state-metrics">
+              <div class="metric">
+                <span class="label">Goals:</span>
+                <span class="value"><%= (agent.cognitive_state[:goals] || []).size %></span>
+              </div>
+              <div class="metric">
+                <span class="label">Beliefs:</span>
+                <span class="value"><%= (agent.cognitive_state[:beliefs] || {}).size %></span>
+              </div>
+              <div class="metric">
+                <span class="label">Intentions:</span>
+                <span class="value"><%= (agent.cognitive_state[:intentions] || []).size %></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="devices-section">
+            <h4>Connected Devices</h4>
+            <div class="devices-list">
+              <% agent.devices.each do |device_id, device| %>
+                <div class="device-item">
+                  <div class="device-info">
+                    <strong><%= device.name %></strong>
+                    <span class="device-type"><%= device.class.name.split('::').last %></span>
+                  </div>
+                  <div class="tensor-shape">
+                    Shape: [<%= device.tensor_shape.join(', ') %>]
+                  </div>
+                  <% if device.is_a?(RoboticsMiddleware::Actuator) %>
+                    <button class="actuate-btn" onclick="actuateDevice('<%= agent_id %>', '<%= device_id %>')">
+                      Actuate
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="agent-actions">
+            <button onclick="exportAgentGGUF('<%= agent_id %>')">Export GGUF</button>
+            <button onclick="updateCognition('<%= agent_id %>')">Update Cognition</button>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <!-- Tensor Field Visualization -->
+  <section class="workbench-section">
+    <h2>Tensor Field Visualization</h2>
+    <div class="tensor-visualization">
+      <div class="visualization-controls">
+        <button onclick="refreshTensorField()">Refresh Tensor Field</button>
+        <button onclick="toggleHypergraph()">Toggle Hypergraph</button>
+      </div>
+      <div id="tensor-canvas" class="tensor-canvas">
+        <% @tensor_visualizations.each do |agent_id, viz| %>
+          <div class="agent-tensor-viz" data-agent="<%= agent_id %>">
+            <h4><%= agent_id %> Tensor Analysis</h4>
+            <div class="tensor-metrics">
+              <div class="metric-box">
+                <span class="metric-label">Cognitive Complexity</span>
+                <span class="metric-value"><%= viz[:cognitive_complexity][:goal_count] + viz[:cognitive_complexity][:belief_complexity] %></span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">Device States</span>
+                <span class="metric-value"><%= viz[:device_states].size %></span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">Hypergraph Edges</span>
+                <span class="metric-value"><%= viz[:hypergraph_metrics][:edge_count] %></span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">Total Parameters</span>
+                <span class="metric-value"><%= viz[:tensor_dimensions][:total_parameters] %></span>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Experiment Management -->
+  <section class="workbench-section">
+    <h2>Robotics Experiments</h2>
+    <div class="experiment-panel">
+      <div class="experiment-controls">
+        <button onclick="createExperiment()">Create New Experiment</button>
+        <button onclick="exportLabState()">Export Full Lab State (GGUF)</button>
+      </div>
+      
+      <div class="experiments-list">
+        <% @experiments.each do |exp_id, experiment| %>
+          <div class="experiment-item" data-experiment="<%= exp_id %>">
+            <div class="experiment-info">
+              <h4><%= experiment.name %></h4>
+              <span class="experiment-state state-<%= experiment.state %>"><%= experiment.state.capitalize %></span>
+            </div>
+            <div class="experiment-details">
+              <p>Agents: <%= experiment.agents.join(', ') %></p>
+              <p>Objectives: <%= experiment.objectives.size %></p>
+              <p>Duration: <%= experiment.duration %>s</p>
+            </div>
+            <div class="experiment-actions">
+              <% if experiment.state == 'initialized' %>
+                <button onclick="startExperiment('<%= exp_id %>')">Start</button>
+              <% elsif experiment.state == 'running' %>
+                <button onclick="stopExperiment('<%= exp_id %>')">Stop</button>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Distributed Cognition Status -->
+  <section class="workbench-section">
+    <h2>Distributed Cognition Network</h2>
+    <div class="distributed-status">
+      <% @workbench_state[:distributed_nodes].each do |node| %>
+        <div class="node-status <%= node[:connected] ? 'connected' : 'disconnected' %>">
+          <div class="node-info">
+            <strong><%= node[:node_id] %></strong>
+            <span class="node-address"><%= node[:address] %></span>
+          </div>
+          <div class="node-capabilities">
+            <% node[:capabilities].each do |capability| %>
+              <span class="capability-tag"><%= capability %></span>
+            <% end %>
+          </div>
+          <div class="node-metrics">
+            <span class="status-indicator"></span>
+            <span class="last-heartbeat">Last: <%= Time.at(node[:last_heartbeat]).strftime('%H:%M:%S') %></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <!-- HomeAssistant Integration -->
+  <section class="workbench-section">
+    <h2>HomeAssistant Kernelization</h2>
+    <div class="homeassistant-kernels">
+      <p class="section-description">
+        Traditional HomeAssistant automations transformed into agentic cognitive kernels 
+        with neural-symbolic reasoning capabilities.
+      </p>
+      <a href="/homeassistant" class="kernel-link">View Cognitive Automation Kernels →</a>
+    </div>
+  </section>
+</main>
+
+<script>
+// Workbench JavaScript Functions
+function actuateDevice(agentId, deviceId) {
+  const position = prompt('Enter target position:', '0.5');
+  if (position === null) return;
+  
+  fetch(`/workbench/api/agents/${agentId}/devices/${deviceId}/actuate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target_position: parseFloat(position) })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Device actuated successfully!');
+      location.reload();
+    } else {
+      alert('Actuation failed!');
+    }
+  });
+}
+
+function exportAgentGGUF(agentId) {
+  fetch(`/workbench/api/agents/${agentId}/gguf_export`)
+  .then(response => response.json())
+  .then(data => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agent_${agentId}_gguf_export.json`;
+    a.click();
+  });
+}
+
+function updateCognition(agentId) {
+  const goal = prompt('Add new goal:', 'explore_environment');
+  if (goal === null) return;
+  
+  fetch(`/workbench/api/agents/${agentId}/cognitive_update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      goals: [goal],
+      intentions: [`execute_${goal}`]
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Cognitive state updated!');
+      location.reload();
+    }
+  });
+}
+
+function createExperiment() {
+  const name = prompt('Experiment name:', 'Object Manipulation Study');
+  const agents = prompt('Agent IDs (comma-separated):', 'marduk_agent_01');
+  const objectives = prompt('Objectives (comma-separated):', 'object_detection,grasp_planning,execution');
+  
+  if (name === null) return;
+  
+  fetch('/workbench/api/experiments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: name,
+      agents: agents ? agents.split(',').map(s => s.trim()) : [],
+      objectives: objectives ? objectives.split(',').map(s => s.trim()) : []
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Experiment created!');
+      location.reload();
+    }
+  });
+}
+
+function startExperiment(experimentId) {
+  fetch(`/workbench/api/experiments/${experimentId}/start`, { method: 'POST' })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Experiment started!');
+      location.reload();
+    }
+  });
+}
+
+function stopExperiment(experimentId) {
+  fetch(`/workbench/api/experiments/${experimentId}/stop`, { method: 'POST' })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Experiment stopped!');
+      location.reload();
+    }
+  });
+}
+
+function exportLabState() {
+  fetch('/gguf/export/full_lab')
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(`Lab state exported! Download: ${data.download_url}`);
+      window.open(data.download_url, '_blank');
+    }
+  });
+}
+
+function refreshTensorField() {
+  fetch('/workbench/api/tensor_field')
+  .then(response => response.json())
+  .then(data => {
+    console.log('Tensor field data:', data);
+    alert('Tensor field refreshed! Check console for details.');
+  });
+}
+
+function toggleHypergraph() {
+  alert('Hypergraph visualization toggled! (Feature would show interactive graph)');
+}
+
+// Auto-refresh workbench every 30 seconds
+setInterval(() => {
+  console.log('Auto-refreshing workbench data...');
+  refreshTensorField();
+}, 30000);
+</script>
